@@ -1,0 +1,105 @@
+Microsoft (R) Macro Assembler Version 14.16.27040.0	    06/25/20 13:03:13
+Chap4_Moves.asm						     Page 1 - 1
+
+
+				;数据传送示例
+				.386
+				.model flat,stdcall
+				.stack 4096
+				ExitProcess proto,dwExitCode:dword
+
+ 00000000			.data
+ 00000000 1000			val1 WORD 1000h
+ 00000002 2000			val2 WORD 2000H
+ 00000004 10 20 30 40 50	arrayB BYTE 10h,20h,30h,40h,50h
+ 00000009 0100 0200 0300	arrayW WORD 100h,200h,300h
+ 0000000F 00010000		arrayD DWORD 10000h,20000h
+	   00020000
+
+ 00000000			.code
+ 00000000			main proc
+				;演示movzx指令
+ 00000000  66| BB 0000			mov		bx,0
+ 00000004  66| BB A69B			mov		bx,0a69bh
+ 00000008  0F B7 C3			movzx	eax,bx
+ 0000000B  0F B6 D3			movzx	edx,bl
+ 0000000E  66| 0F B6 CB			movzx	cx,bl
+				;演示movsx指令
+ 00000012  66| BB A69B			mov		bx,0a69bh
+ 00000016  0F BF C3			movsx	eax,bx
+ 00000019  0F BE D3			movsx	edx,bl
+ 0000001C  B3 7B			mov		bl,7bh
+ 0000001E  66| 0F BE CB			movsx	cx,bl
+				;内存-内存的交换
+ 00000022  66| A1			mov		ax,val1
+	   00000000 R
+ 00000028  66| 87 05			xchg	ax,val2
+	   00000002 R
+ 0000002F  66| A3			mov		val1,ax
+	   00000000 R
+				;直接-偏移量寻址（字节数组）
+ 00000035  A0 00000004 R		mov		al,arrayB
+ 0000003A  A0 00000005 R		mov		al,[arrayB+1]
+ 0000003F  A0 00000006 R		mov		al,[arrayB+2]
+				;直接-偏移量寻址（字数组）
+ 00000044  66| A1			mov		ax,arrayW
+	   00000009 R
+ 0000004A  66| A1			mov		ax,[arrayW+2]
+	   0000000B R
+				;直接-偏移量寻址(双字数组)
+ 00000050  A1 0000000F R		mov		eax,arrayD
+ 00000055  A1 00000013 R		mov		eax,[arrayD+4]
+ 0000005A  A1 00000013 R		mov		eax,[arrayD+4]
+
+					INVOKE	ExitProcess,0
+ 0000005F  6A 00	   *	    push   +000000000h
+ 00000061  E8 00000000 E   *	    call   ExitProcess
+
+ 00000066			main ENDP
+				END	 main
+
+Microsoft (R) Macro Assembler Version 14.16.27040.0	    06/25/20 13:03:13
+Chap4_Moves.asm						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000017 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000066 DWord	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000066 Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+arrayB . . . . . . . . . . . . .	Byte	 00000004 _DATA	
+arrayD . . . . . . . . . . . . .	DWord	 0000000F _DATA	
+arrayW . . . . . . . . . . . . .	Word	 00000009 _DATA	
+val1 . . . . . . . . . . . . . .	Word	 00000000 _DATA	
+val2 . . . . . . . . . . . . . .	Word	 00000002 _DATA	
+
+	   0 Warnings
+	   0 Errors
