@@ -5,9 +5,19 @@ include Irvine32.inc
 op1 byte 34h,12h,98h,74h,06h,0a4h,0b2h,0a2h
 op2 byte 02h,45h,23h,0h,0h,87h,10h,80h
 sum byte 9 dup(0)
+wordVal dword -101
 
 .code
 main proc
+	mov ax,1000h
+	mov bl,10h
+	div bl
+	
+	mov dx,0
+	mov eax,wordVal
+	mov bx,2
+	idiv bx
+
 	mov al,48
 	mov bl,-8
 	imul bl
@@ -65,7 +75,7 @@ Display_Sum proc
 	add esi,ecx
 	sub esi,type byte
 	mov ebx,type byte
-2L1:	mov al,[esi]
+L1:	mov al,[esi]
 	call WriteHexB
 	sub esi,type byte
 	loop L1
