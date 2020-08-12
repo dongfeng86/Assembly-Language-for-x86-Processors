@@ -3,6 +3,7 @@ Debug/
 Release/
 x64/
 Irvine7edPowerpointsPdf/
+*.zip
 
 *.pdf
 
