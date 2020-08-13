@@ -18,10 +18,13 @@
     <ClCompile Include="CProject.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="一个简单的堆栈帧.cpp">
+    <ClCompile Include="add.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="add.cpp">
+    <ClCompile Include="数组.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="一个简单的堆栈帧.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

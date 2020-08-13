@@ -38,6 +38,7 @@
     <MASM Include="RevStr.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </MASM>
+    <MASM Include="数组行求和.asm" />
     <MASM Include="整数运算.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <MakeAllSymbolsPublic Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</MakeAllSymbolsPublic>
@@ -48,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -1,8 +1,8 @@
-Microsoft (R) Macro Assembler Version 14.16.27040.0	    08/01/20 16:25:08
-整数运算.asm						     Page 1 - 1
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/13/20 15:48:26
+数组行求和.asm						     Page 1 - 1
 
 
-				;整数运算
+				;计算二维数组的某行的和
 				include Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
 			      C 
@@ -23,97 +23,52 @@ Microsoft (R) Macro Assembler Version 14.16.27040.0	    08/01/20 16:25:08
 			      C 
 
  00000000			.data
- 00000000 34 12 98 74 06	op1 byte 34h,12h,98h,74h,06h,0a4h,0b2h,0a2h
-	   A4 B2 A2
- 00000008 02 45 23 00 00	op2 byte 02h,45h,23h,0h,0h,87h,10h,80h
-	   87 10 80
- 00000010  00000009 [		sum byte 9 dup(0)
-	    00
-	   ]
- 00000019 FFFFFF9B		wordVal dword -101
+ 00000000 10 20 30 40 50	tableB	byte 10h,20h,30h,40h,50h
+ 00000005 = 00000005		RowSize=($-tableB)
+ 00000005  60 70 80 90 A0			byte 60h,70h,80h,90h,0a0h
+ 0000000A  B0 C0 D0 E0 F0			byte 0b0h,0c0h,0d0h,0e0h,0f0h
 
  00000000			.code
  00000000			main proc
- 00000000  66| B8 1000			mov ax,1000h
- 00000004  B3 10			mov bl,10h
- 00000006  F6 F3			div bl
+ 00000000  BB 00000000 R		mov ebx,offset tableB
+ 00000005  B8 000003E8			mov eax,1000
+ 0000000A  B9 00000005			mov ecx,RowSize
+ 0000000F  E8 00000007			call calc_row_sum
 					
- 00000008  66| BA 0000			mov dx,0
- 0000000C  A1 00000019 R		mov eax,wordVal
- 00000011  66| BB 0002			mov bx,2
- 00000015  66| F7 FB			idiv bx
+					exit	
+ 00000014  6A 00	   *	    push   +000000000h
+ 00000016  E8 00000000 E   *	    call   ExitProcess
+ 0000001B			main endp
 
- 00000018  B0 30			mov al,48
- 0000001A  B3 F8			mov bl,-8
- 0000001C  F6 EB			imul bl
+ 0000001B			calc_row_sum proc uses ebx ecx edx esi
+				;计算字节矩阵中一行的和数
+				;参数：ebx=表偏移量,eax=行索引
+				;ecx=按字节计的行大小
+				;返回：eax为和数
+ 0000001B  53		   *	    push   ebx
+ 0000001C  51		   *	    push   ecx
+ 0000001D  52		   *	    push   edx
+ 0000001E  56		   *	    push   esi
+ 0000001F  F7 E1			mul ecx
+ 00000021  03 D8			add ebx,eax
+ 00000023  B8 00000000			mov eax,0
+ 00000028  BE 00000000			mov esi,0
+ 0000002D  0F B6 14 33		L1:	movzx edx,byte ptr [ebx + esi* type tableB]
+ 00000031  03 C2			add eax,edx
+ 00000033  46				inc esi
+ 00000034  E2 F7			loop L1
+					
+					ret
+ 00000036  5E		   *	    pop    esi
+ 00000037  5A		   *	    pop    edx
+ 00000038  59		   *	    pop    ecx
+ 00000039  5B		   *	    pop    ebx
+ 0000003A  C3		   *	    ret    00000h
+ 0000003B			calc_row_sum endp
 
- 0000001E  B2 00			mov dl,0
- 00000020  B0 FF			mov al,0ffh
- 00000022  04 FF			add al,0ffh
- 00000024  80 D2 00			adc dl,0
-
- 00000027  BA 00000000			mov edx,0
- 0000002C  B8 FFFFFFFF			mov eax,0ffffffffh
- 00000031  83 C0 FF			add eax,0ffffffffh
- 00000034  83 D2 00			adc edx,0
-
-					;调用扩展加法
- 00000037  BE 00000000 R		mov esi,offset op1
- 0000003C  BF 00000008 R		mov edi,offset op2
- 00000041  BB 00000010 R		mov ebx,offset sum
- 00000046  B9 00000008			mov ecx,lengthof op1
- 0000004B  E8 0000001B			call Extended_Add
-					;显示和数
- 00000050  BE 00000010 R		mov esi,offset sum
- 00000055  B9 00000009			mov ecx,lengthof sum
- 0000005A  E8 00000029			call Display_Sum
- 0000005F  E8 00000000 E		call Crlf
-
-					exit
- 00000064  6A 00	   *	    push   +000000000h
- 00000066  E8 00000000 E   *	    call   ExitProcess
- 0000006B			main endp
-
-				;计算两个以字节数组存放的扩展整数之和
-				;接受：esi和edi为两个加数的指针，EBX为和数变量指针，ECX为相加的字节数
-				;和数存储区必须比输入的操作数多一个字节
- 0000006B			Extended_Add proc
- 0000006B  60				pushad
- 0000006C  F8				clc				;清除进位标志位
- 0000006D  8A 06		L1:	mov al,[esi]	;mov don't modify the flag
- 0000006F  12 07			adc al,[edi]
- 00000071  9C				pushfd			;保存进位标志位
- 00000072  88 03			mov [ebx],al
- 00000074  83 C6 01			add esi,1
- 00000077  83 C7 01			add edi,1
- 0000007A  83 C3 01			add ebx,1
- 0000007D  9D				popfd
- 0000007E  E2 ED			loop L1
-
- 00000080  C6 03 00			mov byte ptr [ebx],0	;清楚和数高字节
- 00000083  80 13 00			adc byte ptr [ebx],0	;加上进位
- 00000086  61				popad
- 00000087  C3				ret
- 00000088			Extended_Add ENDP
-
-				;从高字节到低字节显示数字
- 00000088			Display_Sum proc
- 00000088  60				pushad
- 00000089  03 F1			add esi,ecx
- 0000008B  83 EE 01			sub esi,type byte
- 0000008E  BB 00000001			mov ebx,type byte
- 00000093  8A 06		L1:	mov al,[esi]
- 00000095  E8 00000000 E		call WriteHexB
- 0000009A  83 EE 01			sub esi,type byte
- 0000009D  E2 F4			loop L1
-
- 0000009F  61				popad
- 000000A0  C3				ret
- 000000A1			Display_Sum endp
-
-				END main
-Microsoft (R) Macro Assembler Version 14.16.27040.0	    08/01/20 16:25:08
-整数运算.asm						     Symbols 2 - 1
+				end main
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/13/20 15:48:26
+数组行求和.asm						     Symbols 2 - 1
 
 
 
@@ -206,8 +161,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000001D Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000000A1 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000000F Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000003B Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -221,13 +176,9 @@ CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-Display_Sum  . . . . . . . . . .	P Near	 00000088 _TEXT	Length= 00000019 Public STDCALL
-  L1 . . . . . . . . . . . . . .	L Near	 00000093 _TEXT	
 DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-Extended_Add . . . . . . . . . .	P Near	 0000006B _TEXT	Length= 0000001D Public STDCALL
-  L1 . . . . . . . . . . . . . .	L Near	 0000006D _TEXT	
 FileTimeToDosDateTime  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 FileTimeToSystemTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 FlushConsoleInputBuffer  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -318,7 +269,9 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000006B Public STDCALL
+calc_row_sum . . . . . . . . . .	P Near	 0000001B _TEXT	Length= 00000020 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0000002D _TEXT	
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000001B Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -446,6 +399,7 @@ RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h
 RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
 ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
 ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
+RowSize  . . . . . . . . . . . .	Number	 00000005h   
 SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
 SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
 SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
@@ -551,12 +505,9 @@ lightGreen . . . . . . . . . . .	Number	 0000000Ah
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
-op1  . . . . . . . . . . . . . .	Byte	 00000000 _DATA	
-op2  . . . . . . . . . . . . . .	Byte	 00000008 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
-sum  . . . . . . . . . . . . . .	Byte	 00000010 _DATA	
+tableB . . . . . . . . . . . . .	Byte	 00000000 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
-wordVal  . . . . . . . . . . . .	DWord	 00000019 _DATA	
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
 
