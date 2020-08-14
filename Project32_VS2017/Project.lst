@@ -1,8 +1,8 @@
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/13/20 15:48:26
-数组行求和.asm						     Page 1 - 1
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/14/20 10:55:53
+ShowTime.asm						     Page 1 - 1
 
 
-				;计算二维数组的某行的和
+				;结构体的使用
 				include Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
 			      C 
@@ -23,52 +23,51 @@ Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/13/20 15:48:26
 			      C 
 
  00000000			.data
- 00000000 10 20 30 40 50	tableB	byte 10h,20h,30h,40h,50h
- 00000005 = 00000005		RowSize=($-tableB)
- 00000005  60 70 80 90 A0			byte 60h,70h,80h,90h,0a0h
- 0000000A  B0 C0 D0 E0 F0			byte 0b0h,0c0h,0d0h,0e0h,0f0h
+ 00000000 0000 0000 0000	sysTime SYSTEMTIME <>
+	   0000 0000 0000
+	   0000 0000
+ 00000010 000A 0005		XYPos COORD	<10,5>
+ 00000014 00000000		consoleHandle dword ?
+ 00000018 3A 00			colonStr byte ":",0
 
  00000000			.code
  00000000			main proc
- 00000000  BB 00000000 R		mov ebx,offset tableB
- 00000005  B8 000003E8			mov eax,1000
- 0000000A  B9 00000005			mov ecx,RowSize
- 0000000F  E8 00000007			call calc_row_sum
-					
-					exit	
- 00000014  6A 00	   *	    push   +000000000h
- 00000016  E8 00000000 E   *	    call   ExitProcess
- 0000001B			main endp
-
- 0000001B			calc_row_sum proc uses ebx ecx edx esi
-				;计算字节矩阵中一行的和数
-				;参数：ebx=表偏移量,eax=行索引
-				;ecx=按字节计的行大小
-				;返回：eax为和数
- 0000001B  53		   *	    push   ebx
- 0000001C  51		   *	    push   ecx
- 0000001D  52		   *	    push   edx
- 0000001E  56		   *	    push   esi
- 0000001F  F7 E1			mul ecx
- 00000021  03 D8			add ebx,eax
- 00000023  B8 00000000			mov eax,0
- 00000028  BE 00000000			mov esi,0
- 0000002D  0F B6 14 33		L1:	movzx edx,byte ptr [ebx + esi* type tableB]
- 00000031  03 C2			add eax,edx
- 00000033  46				inc esi
- 00000034  E2 F7			loop L1
-					
-					ret
- 00000036  5E		   *	    pop    esi
- 00000037  5A		   *	    pop    edx
- 00000038  59		   *	    pop    ecx
- 00000039  5B		   *	    pop    ebx
- 0000003A  C3		   *	    ret    00000h
- 0000003B			calc_row_sum endp
+				;获取win32控制台的标准输出句柄
+					invoke GetStdHandle,STD_OUTPUT_HANDLE
+ 00000000  6A F5	   *	    push    -00000000Bh
+ 00000002  E8 00000000 E   *	    call   GetStdHandle
+ 00000007  A3 00000014 R		mov consoleHandle,eax
+				;设置光标位置获取系统时间
+					invoke SetConsoleCursorPosition,consoleHandle,XYPos
+ 0000000C  FF 35 00000010 R *	    push   dword  ptr XYPos
+ 00000012  FF 35 00000014 R *	    push   consoleHandle
+ 00000018  E8 00000000 E   *	    call   SetConsoleCursorPosition
+					invoke GetLocalTime,addr sysTime
+ 0000001D  68 00000000 R   *	    push   OFFSET sysTime
+ 00000022  E8 00000000 E   *	    call   GetLocalTime
+				;显示系统时间
+ 00000027  0F B7 05			movzx eax,sysTime.wHour	;hour
+	   00000008 R
+ 0000002E  E8 00000000 E		call WriteDec
+ 00000033  BA 00000018 R		mov edx,offset colonStr	;output ":"
+ 00000038  E8 00000000 E		call WriteString
+ 0000003D  0F B7 05			movzx eax,sysTime.wMinute	;minute
+	   0000000A R
+ 00000044  E8 00000000 E		call WriteDec
+ 00000049  E8 00000000 E		call WriteString
+ 0000004E  0F B7 05			movzx eax,sysTime.wSecond	;second
+	   0000000C R
+ 00000055  E8 00000000 E		call WriteDec
+ 0000005A  E8 00000000 E		call Crlf
+ 0000005F  E8 00000000 E		call WaitMsg
+					exit
+ 00000064  6A 00	   *	    push   +000000000h
+ 00000066  E8 00000000 E   *	    call   ExitProcess
+ 0000006B			main endp
 
 				end main
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/13/20 15:48:26
-数组行求和.asm						     Symbols 2 - 1
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/14/20 10:55:53
+ShowTime.asm						     Symbols 2 - 1
 
 
 
@@ -161,8 +160,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000000F Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000003B Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000001A Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000006B Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -269,9 +268,7 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-calc_row_sum . . . . . . . . . .	P Near	 0000001B _TEXT	Length= 00000020 Public STDCALL
-  L1 . . . . . . . . . . . . . .	L Near	 0000002D _TEXT	
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000001B Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000006B Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -399,7 +396,6 @@ RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h
 RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
 ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
 ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
-RowSize  . . . . . . . . . . . .	Number	 00000005h   
 SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
 SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
 SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
@@ -491,9 +487,12 @@ VK_UP  . . . . . . . . . . . . .	Number	 00000026h
 WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
 WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+XYPos  . . . . . . . . . . . . .	COORD	 00000010 _DATA	
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
+colonStr . . . . . . . . . . . .	Byte	 00000018 _DATA	
+consoleHandle  . . . . . . . . .	DWord	 00000014 _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
 gray . . . . . . . . . . . . . .	Number	 00000008h   
@@ -506,7 +505,7 @@ lightMagenta . . . . . . . . . .	Number	 0000000Dh
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
 red  . . . . . . . . . . . . . .	Number	 00000004h   
-tableB . . . . . . . . . . . . .	Byte	 00000000 _DATA	
+sysTime  . . . . . . . . . . . .	SYSTEMTIME  00000000 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   

@@ -4,6 +4,7 @@ Release/
 x64/
 Irvine7edPowerpointsPdf/
 *.zip
+*.filters
 
 *.pdf
 
