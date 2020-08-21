@@ -1,7 +1,8 @@
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/20/20 17:59:13
-WriteColors.asm						     Page 1 - 1
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/21/20 12:30:03
+堆内存分配.asm						     Page 1 - 1
 
 
+				;堆测试
 				include Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
 			      C 
@@ -21,69 +22,131 @@ WriteColors.asm						     Page 1 - 1
 			      C .LIST
 			      C 
 
+				;使用动态内存分配，本程序分配并填充一个字节数组
+
  00000000			.data
- 00000000 00000000		outHandle HANDLE ?
- 00000004 00000000		cellsWritten dword ?
- 00000008 000A 0014		xyPos COORD <10,20>
+ = 000003E8			ARRAY_SIZE = 1000
+ = 000000FF			FILL_VAL EQU 0FFh
 
-				;字符编号数组：
- 0000000C 61 62 63 64 65	buffer byte 'a','b','c','d','e','f','g',8,9,10,11,12,13,14,15
-	   66 67 08 09 0A
-	   0B 0C 0D 0E 0F
- 0000001B  10 11 12 13 14			byte 16,17,18,19,20
- 00000020 00000014		BufSize dword ($-buffer)
-
-				;属性数组
- 00000024 000F 000E 000D	attributes word 0fh,0eh,0dh,0ch,0bh,0ah,9,8,7,6
-	   000C 000B 000A
-	   0009 0008 0007
-	   0006
- 00000038  0005 0004 0003				word 5,4,3,2,1,0f0h,0e0h,0d0h,0c0h,0b0h
-	   0002 0001 00F0
-	   00E0 00D0 00C0
-	   00B0
+ 00000000 00000000		hHeap	HANDLE ?
+ 00000004 00000000		pArray	dword ?
+ 00000008 00000000		newHeap	dword ?
+ 0000000C 68 65 61 70 20	str1 byte "heap size is: ",0
+	   73 69 7A 65 20
+	   69 73 3A 20 00
 
  00000000			.code
  00000000			main proc
-				;获取控制台标准输出句柄
-					invoke GetStdHandle,STD_OUTPUT_HANDLE
- 00000000  6A F5	   *	    push    -00000000Bh
- 00000002  E8 00000000 E   *	    call   GetStdHandle
- 00000007  A3 00000000 R		mov outHandle,eax
-				;设置相邻单元格颜色：
-					invoke WriteConsoleOutputAttribute,
-							outHandle,
-							addr attributes,
-							BufSize,
-							xyPos,
-							addr cellsWritten
- 0000000C  68 00000004 R   *	    push   OFFSET cellsWritten
- 00000011  FF 35 00000008 R *	    push   dword  ptr xyPos
- 00000017  FF 35 00000020 R *	    push   BufSize
- 0000001D  68 00000024 R   *	    push   OFFSET attributes
- 00000022  FF 35 00000000 R *	    push   outHandle
- 00000028  E8 00000000 E   *	    call   WriteConsoleOutputAttribute
-				;写1到20号字符
-					invoke WriteConsoleOutputCharacter,
-							outHandle,
-							addr buffer,
-							BufSize,
-							xyPos,
-							addr cellsWritten
- 0000002D  68 00000004 R   *	    push   OFFSET cellsWritten
- 00000032  FF 35 00000008 R *	    push   dword  ptr xyPos
- 00000038  FF 35 00000020 R *	    push   BufSize
- 0000003E  68 0000000C R   *	    push   OFFSET buffer
- 00000043  FF 35 00000000 R *	    push   outHandle
- 00000049  E8 00000000 E   *	    call   WriteConsoleOutputCharacterA
+					invoke GetProcessHeap
+ 00000000  E8 00000000 E   *	    call   GetProcessHeap
+					.if eax == NULL
+ 00000005  0B C0	   *	    or	eax, eax
+ 00000007  75 09	   *	    jne    @C0001
+ 00000009  E8 00000000 E		call WriteWindowsMsg
+ 0000000E  EB 3F			jmp quit
+					.else
+ 00000010  EB 05	   *	    jmp    @C0003
+ 00000012		   *@C0001:
+ 00000012  A3 00000000 R		mov hHeap,eax
+					.endif
+ 00000017		   *@C0003:
 
-					invoke ExitProcess,0
- 0000004E  6A 00	   *	    push   +000000000h
- 00000050  E8 00000000 E   *	    call   ExitProcess
- 00000055			main endp
+ 00000017  E8 0000003A			call allocate_array
+ 0000001C  73 0F			jnc arrayOk
+ 0000001E  E8 00000000 E		call WriteWindowsMsg
+ 00000023  E8 00000000 E		call Crlf
+ 00000028  E9 00000000 E		jmp Crlf
+
+ 0000002D			arrayOk:
+ 0000002D  E8 00000046			call fill_array
+ 00000032  E8 00000059			call display_array
+ 00000037  E8 00000000 E		call Crlf
+					;释放数组
+					invoke HeapFree,hHeap,0,pArray
+ 0000003C  FF 35 00000004 R *	    push   pArray
+ 00000042  6A 00	   *	    push   +000000000h
+ 00000044  FF 35 00000000 R *	    push   hHeap
+ 0000004A  E8 00000000 E   *	    call   HeapFree
+
+ 0000004F			quit:
+					exit
+ 0000004F  6A 00	   *	    push   +000000000h
+ 00000051  E8 00000000 E   *	    call   ExitProcess
+ 00000056			main endp
+
+ 00000056			allocate_array proc uses eax
+				;动态分配数组空间
+				;参数：eax=程序堆句柄
+				;返回：如果内存分配成功，则CF=0
+ 00000056  50		   *	    push   eax
+					invoke HeapAlloc,hHeap,HEAP_ZERO_MEMORY,ARRAY_SIZE
+ 00000057  68 000003E8	   *	    push   +0000003E8h
+ 0000005C  6A 08	   *	    push   +000000008h
+ 0000005E  FF 35 00000000 R *	    push   hHeap
+ 00000064  E8 00000000 E   *	    call   HeapAlloc
+					.IF eax==NULL
+ 00000069  0B C0	   *	    or	eax, eax
+ 0000006B  75 03	   *	    jne    @C0004
+ 0000006D  F9					stc		;返回CF=1
+					.ELSE
+ 0000006E  EB 06	   *	    jmp    @C0006
+ 00000070		   *@C0004:
+ 00000070  A3 00000004 R			mov pArray,eax
+ 00000075  F8					clc		;返回CF=0
+					.ENDIF
+ 00000076		   *@C0006:
+					ret
+ 00000076  58		   *	    pop    eax
+ 00000077  C3		   *	    ret    00000h
+ 00000078			allocate_array endp
+
+ 00000078			fill_array proc uses ecx edx esi
+				;用1个字符填充整个数组
+				;接受：无
+				;返回：无
+ 00000078  51		   *	    push   ecx
+ 00000079  52		   *	    push   edx
+ 0000007A  56		   *	    push   esi
+ 0000007B  B9 000003E8			mov ecx,ARRAY_SIZE
+ 00000080  8B 35 00000004 R		mov esi,pArray
+ 00000086  C6 06 FF		L1:	mov byte ptr [esi],FILL_VAL
+ 00000089  46				inc esi
+ 0000008A  E2 FA			loop L1
+					
+					ret
+ 0000008C  5E		   *	    pop    esi
+ 0000008D  5A		   *	    pop    edx
+ 0000008E  59		   *	    pop    ecx
+ 0000008F  C3		   *	    ret    00000h
+ 00000090			fill_array endp
+
+ 00000090			display_array proc uses eax ebx ecx esi
+				;显示数组
+				;接受：无
+				;返回：无
+ 00000090  50		   *	    push   eax
+ 00000091  53		   *	    push   ebx
+ 00000092  51		   *	    push   ecx
+ 00000093  56		   *	    push   esi
+ 00000094  B9 000003E8			mov ecx,ARRAY_SIZE
+ 00000099  8B 35 00000004 R		mov esi,pArray
+ 0000009F  8A 06		L1:	mov al,[esi]
+ 000000A1  BB 00000001			mov ebx,type byte
+ 000000A6  E8 00000000 E		call WriteHexB
+ 000000AB  46				inc esi
+ 000000AC  E2 F1			loop L1
+					
+					ret
+ 000000AE  5E		   *	    pop    esi
+ 000000AF  59		   *	    pop    ecx
+ 000000B0  5B		   *	    pop    ebx
+ 000000B1  58		   *	    pop    eax
+ 000000B2  C3		   *	    ret    00000h
+ 000000B3			display_array endp
+
 				end main
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/20/20 17:59:13
-WriteColors.asm						     Symbols 2 - 1
+Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/21/20 12:30:03
+堆内存分配.asm						     Symbols 2 - 1
 
 
 
@@ -176,8 +239,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000004C Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00000055 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000001B Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000000B3 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -284,7 +347,14 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000055 Public STDCALL
+allocate_array . . . . . . . . .	P Near	 00000056 _TEXT	Length= 00000022 Public STDCALL
+display_array  . . . . . . . . .	P Near	 00000090 _TEXT	Length= 00000023 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0000009F _TEXT	
+fill_array . . . . . . . . . . .	P Near	 00000078 _TEXT	Length= 00000018 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 00000086 _TEXT	
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000056 Public STDCALL
+  arrayOk  . . . . . . . . . . .	L Near	 0000002D _TEXT	
+  quit . . . . . . . . . . . . .	L Near	 0000004F _TEXT	
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -304,7 +374,7 @@ Symbols:
 @fardata . . . . . . . . . . . .	Text   	 FLAT
 @stack . . . . . . . . . . . . .	Text   	 FLAT
 ALT_MASK . . . . . . . . . . . .	Number	 00000003h   
-BufSize  . . . . . . . . . . . .	DWord	 00000020 _DATA	
+ARRAY_SIZE . . . . . . . . . . .	Number	 000003E8h   
 CAPSLOCK_ON  . . . . . . . . . .	Number	 00000080h   
 CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
 CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
@@ -344,6 +414,7 @@ FILE_SHARE_DELETE  . . . . . . .	Number	 00000004h
 FILE_SHARE_READ  . . . . . . . .	Number	 00000001h   
 FILE_SHARE_WRITE . . . . . . . .	Number	 00000002h   
 FILE_WRITE_DATA  . . . . . . . .	Number	 00000002h   
+FILL_VAL . . . . . . . . . . . .	Number	 000000FFh   
 FOCUS_EVENT  . . . . . . . . . .	Number	 00000010h   
 FORMAT_MESSAGE_ALLOCATE_BUFFER .	Number	 00000100h   
 FORMAT_MESSAGE_FROM_SYSTEM . . .	Number	 00001000h   
@@ -504,16 +575,14 @@ VK_UP  . . . . . . . . . . . . .	Number	 00000026h
 WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
 WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
-attributes . . . . . . . . . . .	Word	 00000024 _DATA	
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
-buffer . . . . . . . . . . . . .	Byte	 0000000C _DATA	
-cellsWritten . . . . . . . . . .	DWord	 00000004 _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
+hHeap  . . . . . . . . . . . . .	DWord	 00000000 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -521,11 +590,12 @@ lightGreen . . . . . . . . . . .	Number	 0000000Ah
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
-outHandle  . . . . . . . . . . .	DWord	 00000000 _DATA	
+newHeap  . . . . . . . . . . . .	DWord	 00000008 _DATA	
+pArray . . . . . . . . . . . . .	DWord	 00000004 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
+str1 . . . . . . . . . . . . . .	Byte	 0000000C _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
-xyPos  . . . . . . . . . . . . .	COORD	 00000008 _DATA	
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
 
 	   0 Warnings
