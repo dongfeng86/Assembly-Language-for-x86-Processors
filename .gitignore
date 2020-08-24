@@ -2,6 +2,7 @@
 Debug/
 Release/
 x64/
+examples/
 Irvine7edPowerpointsPdf/
 *.zip
 *.filters

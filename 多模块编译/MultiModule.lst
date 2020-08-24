@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/12/20 15:57:31
+Microsoft (R) Macro Assembler Version 14.16.27040.0	    08/23/20 10:40:17
 _prompt.asm						     Page 1 - 1
 
 
@@ -21,7 +21,7 @@ _prompt.asm						     Page 1 - 1
 			      C .NOLIST
 			      C .LIST
 			      C 
-
+				
  00000000			.code
  00000000			PromptForIntegers proc
 				;提示用户为数组输入整数，并用用户输入填充该数组
@@ -51,7 +51,7 @@ _prompt.asm						     Page 1 - 1
  0000002B  C2 000C			ret 12
  0000002E			PromptForIntegers endp
 				end
-Microsoft (R) Macro Assembler Version 14.16.27034.0	    08/12/20 15:57:31
+Microsoft (R) Macro Assembler Version 14.16.27040.0	    08/23/20 10:40:17
 _prompt.asm						     Symbols 2 - 1
 
 

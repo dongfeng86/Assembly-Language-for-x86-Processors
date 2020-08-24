@@ -1,4 +1,4 @@
-int add(int x, int y);
+﻿int add(int x, int y);
 
 int main()
 {
@@ -7,4 +7,3 @@ int main()
 	int m = add(x, y);
 	return 0;
 }
-

@@ -11,10 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="Sum_main.asm" />
-    <MASM Include="_arrySum.asm" />
-    <MASM Include="_display.asm" />
-    <MASM Include="_prompt.asm" />
+    <MASM Include="Sum_main.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+    </MASM>
+    <MASM Include="_arrySum.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+    </MASM>
+    <MASM Include="_display.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+    </MASM>
+    <MASM Include="_prompt.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+    </MASM>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AA73B723-21FF-44A2-A0CE-11BE00624953}</ProjectGuid>

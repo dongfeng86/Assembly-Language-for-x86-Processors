@@ -6,6 +6,8 @@
 .stack 4096
 ExitProcess proto,dwExitCode:dword
 
+.data?
+array dword 0ffh dup(?)
 
 .data
 firstval	dword 20002000h
